@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>PH Fetch</title>
+    <link rel="stylesheet" href="client/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+    <h1>PH Downloader</h1>
+
+    <div class="urlbox">
+
+        <input type="text">
+        <button id="qual"><i class="fa fa-filter"></i></button>
+        <button id="start"><i class="fa fa-cloud-download"></i></button>
+    </div>
+
+    <div class="result">
+        <h3></h3>
+        <img width="100px">
+        <p id="stat">Waiting...</p>
+
+        <progress max="100", value="0"></progress>
+    </div>
+    
+    <div class="end">
+        <button onclick=""><i class="fa fa-video-camera"></i> Open Video</button>
+        <button onclick="window.location.href = '/'"><i class="fa fa-home"></i> Go Home</button>
+    </div>
+
+    <div class="loader"></div>
+
+    <div class="credits">
+        <p>Egsagon</p>
+        <a href="https://github.com/Egsagon/pornhub-fetch">Built with PHFetch</a>
+    </div>
+
+    <script src="client/app.js"></script>
+</body>
+</html>

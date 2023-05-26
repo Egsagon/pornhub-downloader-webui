@@ -1,0 +1,100 @@
+import uuid
+import flask
+import phfetch
+import threading
+from time import sleep
+
+app = flask.Flask(__name__, static_folder = 'client/')
+
+# Keep track of the progress of all threads
+THREADS: dict[str, str | int] = {}
+
+
+def download(video: phfetch.video,
+             session: str,
+             args: dict) -> None:
+    '''
+    Download one video as a thread.
+    '''
+    
+    path = args.get('path', './output/')
+    qual = args.get('qual', 'best')
+    
+    def progress(*args) -> None:
+        # Store and display the current progress
+        
+        if len(args) == 3:
+        
+            msg, cur, out = args
+            THREADS[session] = f'{cur}/{out}'
+            print(msg, cur, '/', out)
+    
+    try:
+        video.download(path, qual,
+                       callback = progress,
+                       escape_stdout = False)
+
+        THREADS[session] = 'done'
+    
+    except Exception as err:
+        
+        print('Thread Error:', repr(err))
+        THREADS[session] = 'error'
+        
+        # Delete after short time
+        sleep(10)
+        del THREADS[session]
+
+@app.route('/')
+def home() -> None:
+    
+    return flask.send_file('client/index.html', mimetype = 'text/html')
+
+@app.route('/get')
+def get() -> None:
+    '''
+    Start a download.
+    '''
+    
+    # Get arguments
+    key = flask.request.args.get('key')
+    
+    # Load the video
+    video = phfetch.video(key = key)
+    session = uuid.uuid4().hex
+    THREADS[session] = 'starting'
+    
+    # Start the download and return the image url/title
+    threading.Thread(target = download,
+                     args = [video,
+                             session,
+                             flask.request.args.to_dict()]).start()
+    
+    return flask.jsonify({'title': video.title,
+                          'thumbnail': video.image,
+                          'session': session})
+
+@app.route('/state')
+def state() -> None:
+    '''
+    Handle sending threads status.
+    '''
+    
+    session = flask.request.args.get('id')
+    return THREADS.get(session, 'unknown-thread')
+
+@app.route('/open')
+def open_() -> None:
+    '''
+    Open the video dir.
+    '''
+    
+    print('Opening output dir')
+    # TODO
+
+
+if __name__ == '__main__':
+    
+    app.run(debug = True)
+
+# EOF
