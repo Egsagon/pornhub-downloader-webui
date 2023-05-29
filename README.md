@@ -10,3 +10,5 @@ Uses [phfetch](https://github.com/Egsagon/pornhub-fetch) to fetch and download v
 To start the server, run the `app.py` file.
 
 ### Demo
+
+![image](https://github.com/Egsagon/pornhub-downloader-webui/blob/master/demo.png)
