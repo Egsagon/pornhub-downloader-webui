@@ -9,6 +9,7 @@ html {
 h1 {
     color: #fff;
     letter-spacing: 3px;
+    font-size: 60px;
 }
 
 body {
@@ -34,19 +35,30 @@ body {
     justify-content: center;
 }
 
+.noselect {
+    -webkit-touch-callout: none; /* iOS Safari */
+      -webkit-user-select: none; /* Safari */
+       -khtml-user-select: none; /* Konqueror HTML */
+         -moz-user-select: none; /* Old versions of Firefox */
+          -ms-user-select: none; /* Internet Explorer/Edge */
+              user-select: none; /* Non-prefixed version, currently
+                                    supported by Chrome, Edge, Opera and Firefox */
+}
+
 .urlbox input, #qual, #start {
     background-color: rgb(27, 27, 29);
     border: 1px solid #464343;
     color: #fff;
-    padding: 6px 10px;
+    padding: 12px 20px;
     outline: none;
+    font-size: 20px;
 }
 
 .urlbox input {
     border-top-left-radius: 4px;
     border-bottom-left-radius: 4px;
-    font-size: 8px;
     flex-grow: 1;
+    font-size: 16px;
 }
 
 #qual {
@@ -101,11 +113,11 @@ body {
     height: 20px;
     border: none;
     border-radius: 4px;
-    background-color: #161414;
+    background-color: #d74417;
 }
 
-.result progress::-moz-progress-bar { background: #d74417; }
-.result progress::-webkit-progress-value { background: #d74417; }
+.result progress::-moz-progress-bar { background: #161414; }
+.result progress::-webkit-progress-value { background: #161414; }
 
 .loader {
     position: absolute;
@@ -146,7 +158,10 @@ body {
     bottom: 0;
     left: 0;
     margin: 10px;
+    padding: 10px;
     font-size: 15px;
+    background-color: #060606;
+    border-radius: 4px;
 }
 
 .credits * {
@@ -154,8 +169,31 @@ body {
     padding: 4px;
 }
 
+.credits p {
+    color: #fff;
+}
+
 .credits a {
     text-decoration: none;
+}
+
+.filters {
+    background-color: #d74417;
+    border-radius: 4px;
+    width: calc(75vw - 20px);
+    padding: 10px;
+    text-align: center;
+}
+
+.hidden {
+    display: none;
+}
+
+
+#ph {
+    background-color: #d74417;
+    padding: 4px;
+    border-radius: 4px;
 }
 
 @keyframes loading {

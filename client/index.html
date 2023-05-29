@@ -3,17 +3,17 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>PH Fetch</title>
+    <title>PH DL</title>
     <link rel="stylesheet" href="client/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 <body>
-    <h1>PH Downloader</h1>
+    <h1 class="noselect"><span id="ph">PH</span> DL</h1>
 
     <div class="urlbox">
 
         <input type="text">
-        <button id="qual"><i class="fa fa-filter"></i></button>
+        <button id="qual" onclick="filters.classList.toggle('hidden')"><i class="fa fa-filter"></i></button>
         <button id="start"><i class="fa fa-cloud-download"></i></button>
     </div>
 
@@ -26,7 +26,7 @@
     </div>
     
     <div class="end">
-        <button onclick=""><i class="fa fa-video-camera"></i> Open Video</button>
+        <button onclick="play()"><i class="fa fa-video-camera"></i> Open Video</button>
         <button onclick="window.location.href = '/'"><i class="fa fa-home"></i> Go Home</button>
     </div>
 
@@ -35,6 +35,19 @@
     <div class="credits">
         <p>Egsagon</p>
         <a href="https://github.com/Egsagon/pornhub-fetch">Built with PHFetch</a>
+    </div>
+
+    <div class="filters hidden">
+        <h2>Options</h2>
+        <p>Quality</p>
+        <select>
+            <option value="best">Best quality</option>
+            <option value="middle">Half quality</option>
+            <option value="worst">Worst quality</option>
+        </select>
+
+        <p>Choose dir path</p>
+        <input type="text" placeholder="output/">
     </div>
 
     <script src="client/app.js"></script>

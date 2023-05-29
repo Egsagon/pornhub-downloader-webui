@@ -1,6 +1,6 @@
 url_input = document.querySelector('.urlbox input')
 start = document.querySelector('#start')
-qual = document.querySelector('#qual')
+qual = document.querySelector('#qual') // --qual-- -> filter dropdown
 loader = document.querySelector('.loader')
 
 container = document.querySelector('.result')
@@ -9,8 +9,13 @@ stats = document.querySelector('.result p')
 thumb = document.querySelector('.result img')
 bar = document.querySelector('.result progress')
 end = document.querySelector('.end')
+filters = document.querySelector('.filters')
+
+filter_quality = filters.querySelector('select')
+filter_path = filters.querySelector('input')
 
 const is_url = /https:\/\/..\.pornhub\.com\/view_video\.php\?viewkey=([\da-z]{13})/gm
+
 
 update = (session) => {
     /* Constantly update text / bar while downloading */
@@ -38,6 +43,9 @@ update = (session) => {
                 stats.innerHTML = `Downloading ${per}% (${value})`
                 bar.value = per
 
+                // Update page title
+                document.title = `PH - DL - ${per}%`
+
                 // Continue listenning
                 return setTimeout(update, 800, session)
             }
@@ -64,6 +72,7 @@ update = (session) => {
             }
 
             // Show the end pannel
+            document.title = 'PH - DL'
             end.style.display = 'flex'
         }
     }
@@ -73,6 +82,9 @@ update = (session) => {
 
 download = () => {
     /* Start the download of the url */
+
+    // Hide the filters
+    filters.classList.add('hidden')
 
     url = url_input.value
 
@@ -90,10 +102,13 @@ download = () => {
     xhr = new XMLHttpRequest()
     
     key = url.split('key=')[1]
-    xhr.open('GET', `/get?key=` + key)
+    path = filter_path.value || 'output/'
 
-    console.log('using key', key)
+    url = `/get?key=${key}&qual=${filter_quality.value || 'best'}&path=${path}`
 
+    console.log('sending:', url)
+
+    xhr.open('GET', url)
     xhr.onreadystatechange = () => {
         if (xhr.readyState == 4) {
 
@@ -117,11 +132,13 @@ download = () => {
     xhr.send(null)
 }
 
-open = () => {
+play = () => {
     /* (Kindly) ask the backend to open the video */
 
+    path = filter_path.value || './output/'
+
     o = new XMLHttpRequest()
-    o.open('GET', '/open')
+    o.open('GET', `/open?dir=${path}`)
     o.send(null)
 }
 

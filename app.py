@@ -1,7 +1,9 @@
+import os
 import uuid
 import flask
 import phfetch
 import threading
+import webbrowser
 from time import sleep
 
 app = flask.Flask(__name__, static_folder = 'client/')
@@ -19,6 +21,9 @@ def download(video: phfetch.video,
     
     path = args.get('path', './output/')
     qual = args.get('qual', 'best')
+    
+    # Correct path if needed
+    if not path.endswith(('/', '\\')): path += '/'
     
     def progress(*args) -> None:
         # Store and display the current progress
@@ -89,12 +94,25 @@ def open_() -> None:
     Open the video dir.
     '''
     
-    print('Opening output dir')
-    # TODO
+    print('Opening video')
+    
+    out = flask.request.args.get('dir', './output/')
+    
+    files = sorted([out + f for f in os.listdir(out)],
+                   key = os.path.getatime)
+
+    if not files: return 'fail', 400
+    
+    os.startfile(os.path.normpath(os.path.normcase(files[-1])))
 
 
 if __name__ == '__main__':
     
-    app.run(debug = True)
+    # webbrowser.open_new('http://127.0.0.1:5000')
+    
+    # Note: you can run that for production with gunicorn 
+    # or something but i doubt this is really secure as there
+    # is no limit rate
+    app.run(debug = True, port = 5000)
 
 # EOF
