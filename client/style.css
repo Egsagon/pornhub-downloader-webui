@@ -92,6 +92,7 @@ body {
     width: calc(75vw - 20px);
     padding: 10px;
     text-align: center;
+    font-size: 20px;
 }
 
 #stat {
@@ -100,7 +101,6 @@ body {
 
 .result h3, .result p {
     color: #fff;
-    font-size: 10px;
 }
 
 .result img {

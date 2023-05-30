@@ -3,116 +3,172 @@ import uuid
 import flask
 import phfetch
 import threading
-import webbrowser
 from time import sleep
+from dataclasses import dataclass
 
 app = flask.Flask(__name__, static_folder = 'client/')
 
-# Keep track of the progress of all threads
-THREADS: dict[str, str | int] = {}
+
+@dataclass
+class Request:
+    session: str
+    video: phfetch.video
+    quality: str | int
+    filepath: str
+    progress: int = 0
+    status: str = 'in queue...'
+    
+    def get_status(self) -> dict:
+        '''
+        Get status to send to the client.
+        '''
+        
+        return {'progress': self.progress,
+                'status': self.status,
+                'filepath': self.filepath}
+
+class Worker:
+    def __init__(self, wid: int) -> None:
+        '''
+        Represents an instance of a worker that can
+        download one video at a time.
+        '''
+        
+        self.id = wid
+        self.running = False
+        self.queue: list[Request] = []
+    
+    def run(self) -> None:
+        '''
+        Start the worker.
+        '''
+        
+        self.running = True
+        while self.running:
+            
+            # Get the first queue element
+            sleep(.5)
+            if not len(self.queue): continue
+            request = self.queue.pop(0)
+            
+            # Download the video
+            def log(txt, cur = 0, total = None) -> None:
+                # Update the request status
+                # every segment download
+                
+                print(f'[W-{self.id}]', txt, cur, '/', total)
+                
+                if total is None: return # wait for the real download
+                request.progress = round((int(cur) / int(total)) * 100)
+            
+            request.status = 'Downloading'
+            
+            request.video.download(
+                path = request.filepath,
+                quality = request.quality,
+                callback = log
+            )
+            
+            # End
+            request.progress = 100
+            request.status = 'done'
+            
+            # Delete the file in 1 hour
+            def delete() -> None:
+                print(f'Deleting old ressource {request.filepath}')
+                os.remove(request.filepath)
+            
+            threading.Timer(30, delete).start()
+    
+    def start(self) -> None:
+        '''
+        Start the worker in a thread.
+        '''
+        
+        threading.Thread(target = self.run).start()
+
+    def stop(self) -> None:
+        '''
+        Stop the worker after the end of the current loop.
+        '''
+        
+        self.running = False
 
 
-def download(video: phfetch.video,
-             session: str,
-             args: dict) -> None:
-    '''
-    Download one video as a thread.
-    '''
-    
-    path = args.get('path', './output/')
-    qual = args.get('qual', 'best')
-    
-    # Correct path if needed
-    if not path.endswith(('/', '\\')): path += '/'
-    
-    def progress(*args) -> None:
-        # Store and display the current progress
-        
-        if len(args) == 3:
-        
-            msg, cur, out = args
-            THREADS[session] = f'{cur}/{out}'
-            print(msg, cur, '/', out)
-    
-    try:
-        video.download(path, qual,
-                       callback = progress,
-                       escape_stdout = False)
+WORKER_COUNT = 5
+WORKERS: list[Worker] = []
+SESSIONS: dict[str, Request] = {}
 
-        THREADS[session] = 'done'
-    
-    except Exception as err:
-        
-        print('Thread Error:', repr(err))
-        THREADS[session] = 'error'
-        
-        # Delete after short time
-        sleep(10)
-        del THREADS[session]
 
 @app.route('/')
 def home() -> None:
+    '''
+    Send main page.
+    '''
     
     return flask.send_file('client/index.html', mimetype = 'text/html')
 
 @app.route('/get')
 def get() -> None:
     '''
-    Start a download.
+    Assign a download to a worker.
     '''
     
     # Get arguments
     key = flask.request.args.get('key')
+    qual = flask.request.args.get('qual')
     
-    # Load the video
-    video = phfetch.video(key = key)
-    session = uuid.uuid4().hex
-    THREADS[session] = 'starting'
-    
-    # Start the download and return the image url/title
-    threading.Thread(target = download,
-                     args = [video,
-                             session,
-                             flask.request.args.to_dict()]).start()
-    
-    return flask.jsonify({'title': video.title,
-                          'thumbnail': video.image,
+    try:
+        session = uuid.uuid4().hex
+        video = phfetch.video(key = key)
+        
+        package = Request(session, video, qual, f'./client/output/{session}.mp4')
+        
+        # Find the least charged worker
+        worker = None
+        for worker_ in WORKERS:
+            
+            if worker is None or len(worker_.queue) < len(worker.queue):
+                worker = worker_
+        
+        # Assign the package to the worker and register it
+        # to the sessions table
+        SESSIONS[session] = package
+        worker.queue.append(package)
+        
+    except Exception as err:
+        
+        print(repr(err))
+        return flask.jsonify({'error': repr(err)}), 400
+
+    # Send video infos and session id
+    return flask.jsonify({'thumbnail': video.image,
+                          'title': video.title,
                           'session': session})
 
-@app.route('/state')
-def state() -> None:
+@app.route('/status')
+def status() -> None:
     '''
-    Handle sending threads status.
+    Handle sending current request status.
     '''
     
-    session = flask.request.args.get('id')
-    return THREADS.get(session, 'unknown-thread')
+    session = flask.request.args.get('id', '')
+    request = SESSIONS.get(session)
+    
+    # Return the session status
+    if not request: return 'Session not found', 404
+    return flask.jsonify(request.get_status())
 
-@app.route('/open')
-def open_() -> None:
-    '''
-    Open the video dir.
-    '''
+# Start the workers
+for i in range(WORKER_COUNT):
+    w = Worker(i)
+    WORKERS.append(w)
+    w.start()
     
-    print('Opening video')
-    
-    out = flask.request.args.get('dir', './output/')
-    
-    files = sorted([out + f for f in os.listdir(out)],
-                   key = os.path.getatime)
-
-    if not files: return 'fail', 400
-    
-    os.startfile(os.path.normpath(os.path.normcase(files[-1])))
+print(f'Started {WORKER_COUNT} workers!')
 
 
 if __name__ == '__main__':
-    
-    # webbrowser.open_new('http://127.0.0.1:5000')
-    
-    # Note: you can run that for production with gunicorn 
-    # or something but i doubt this is really secure as there
-    # is no limit rate
     app.run(debug = True, port = 5000)
 
 # EOF

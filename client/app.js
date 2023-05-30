@@ -2,7 +2,6 @@ url_input = document.querySelector('.urlbox input')
 start = document.querySelector('#start')
 qual = document.querySelector('#qual') // --qual-- -> filter dropdown
 loader = document.querySelector('.loader')
-
 container = document.querySelector('.result')
 title = document.querySelector('.result h3')
 stats = document.querySelector('.result p')
@@ -10,9 +9,7 @@ thumb = document.querySelector('.result img')
 bar = document.querySelector('.result progress')
 end = document.querySelector('.end')
 filters = document.querySelector('.filters')
-
 filter_quality = filters.querySelector('select')
-filter_path = filters.querySelector('input')
 
 const is_url = /https:\/\/..\.pornhub\.com\/view_video\.php\?viewkey=([\da-z]{13})/gm
 
@@ -23,57 +20,48 @@ update = (session) => {
     console.log('updating...')
 
     x = new XMLHttpRequest()
-    x.open('GET', '/state?id=' + session)
+    x.open('GET', '/status?id=' + session)
 
     x.onreadystatechange = () => {
         if (x.readyState == 4) {
 
-            value = x.response
+            res = JSON.parse(x.response)
 
-            console.log('Session status:', value)
+            console.log('New response just dropped:', res)
 
-            if (value.includes('/')) {
-                // Process executing, update html
+            if (res.status === 'Downloading' ) {
 
-                args = value.split('/')
-                cur = args[0]
-                out = args[1]
-                per = Math.round(( Number(cur) / Number(out) ) * 100)
-
-                stats.innerHTML = `Downloading ${per}% (${value})`
-                bar.value = per
-
-                // Update page title
-                document.title = `PH - DL - ${per}%`
+                stats.innerHTML = `${res.progress}%`
+                bar.value = res.progress
+                document.title = `PH - DL - ${res.progress}%`
 
                 // Continue listenning
-                return setTimeout(update, 800, session)
+                return setTimeout(update, 1000, session)
             }
 
-            else if (value === 'unknown-thread') {
-                alert('Error: disconnected from thread')
-                bar.value = 0
-                bar.style.backgroundColor = 'crismon'
-            }
+            else if (res.status === 'done') {
 
-            else if (value === 'error') {
-                stats.innerHTML = `Download failed.`
-                bar.value = 0
-                bar.style.backgroundColor = 'crismon'
-            }
-
-            else if (value === 'done') {
-                stats.innerHTML = `Downloaded!`
-                bar.value = 100
+                // Start the download
+                link = document.createElement('a')
+                link.download = 'video.mp4'
+                link.href = res.filepath
+                link.style.display = 'none'
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+                delete link
             }
 
             else {
-                console.log('Unhandled value:', value)
+                // In case of error, show error
+                
+                alert('Error: ' + res.status)
             }
 
-            // Show the end pannel
+            bar.value = res.progress || 0
             document.title = 'PH - DL'
             end.style.display = 'flex'
+
         }
     }
 
@@ -102,9 +90,8 @@ download = () => {
     xhr = new XMLHttpRequest()
     
     key = url.split('key=')[1]
-    path = filter_path.value || 'output/'
 
-    url = `/get?key=${key}&qual=${filter_quality.value || 'best'}&path=${path}`
+    url = `/get?key=${key}&qual=${filter_quality.value || 'best'}`
 
     console.log('sending:', url)
 
@@ -124,22 +111,12 @@ download = () => {
             stats.innerHTML = 'Download started!'
             container.style.display = 'unset'
 
-            // Loop every 3 seconds to see evolution
-            setTimeout(update, 1000, data.session)
+            // Loop every 2 seconds to see evolution
+            setTimeout(update, 2000, data.session)
         }
     }
 
     xhr.send(null)
-}
-
-play = () => {
-    /* (Kindly) ask the backend to open the video */
-
-    path = filter_path.value || './output/'
-
-    o = new XMLHttpRequest()
-    o.open('GET', `/open?dir=${path}`)
-    o.send(null)
 }
 
 // Bind URL entry
